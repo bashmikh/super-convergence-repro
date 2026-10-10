@@ -79,3 +79,14 @@ def test_update_readme_requires_markers(tmp_path):
     p.write_text("no markers")
     with pytest.raises(ValueError):
         update_readme(p, "x")
+
+
+def test_wd_ablation_labels_diverged(tmp_path, monkeypatch):
+    from convergence_repro import plots
+
+    log = make_log("E4_wd1e-3_s0", "E4", "onecycle", wd=1e-3, status="diverged", accs=(0.3, 0.5, 0.1))
+    log["final"]["diverged_at"] = 2440
+    texts = []
+    monkeypatch.setattr(plots, "_save", lambda fig, stem: texts.extend(t.get_text() for t in fig.axes[0].texts))
+    assert plots.plot_wd_ablation([log, FULL[1]], tmp_path / "wd")
+    assert any("diverged" in t and "2440" in t for t in texts)

@@ -2,6 +2,8 @@
 
 Reproduction of Smith & Topin, *Super-Convergence: Very Fast Training of Neural Networks Using Large Learning Rates* (arXiv:1708.07120v3) with ResNet-20 on CIFAR-10.
 
+**Report (in Russian): [REPORT.md](REPORT.md)** — hypotheses, figures and conclusions.
+
 ## Run in Colab
 
 1. Upload `colab.ipynb` to Colab (File → Upload notebook, or File → Open notebook → GitHub) and select a T4 runtime.
@@ -131,10 +133,47 @@ Floats in YAML need a decimal point in the mantissa (`1.0e-4`); values without i
 ## Results
 
 <!-- RESULTS:START -->
-Not yet available.
+| experiment | run | schedule | lr | iters | wd | batch | train_subset | seeds | test_acc_% | best_acc_% | time_min | status | paper_% |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| E0 | E0 | linear | 0-4 | 1000 | 0.0001 | 1000 |  | 1 | 43.32 | 72.28 | 1.2 | done |  |
+| E1 | E1 | onecycle | 0.1-3 | 5000 | 0.0001 | 1000 |  | 2 | 92.00 ± 0.25 | 92.33 | 6.9 | done | 90.4 (CLR, ~20k it) |
+| E3 | E3 | step | 0.35 | 5000 | 0.0001 | 1000 |  | 2 | 90.38 ± 0.42 | 90.67 | 6.9 | done | 88.6 (PC-LR) |
+| E4 | E4_wd1e-3 | onecycle | 0.1-3 | 5000 | 0.001 | 1000 |  | 1 | 10.00 | 54.61 | 3.3 | diverged |  |
+| E4 | E4_wd1e-5 | onecycle | 0.1-3 | 5000 | 1e-05 | 1000 |  | 1 | 91.05 | 91.05 | 6.9 | done |  |
+| E4 | E4_wd1e-6 | onecycle | 0.1-3 | 5000 | 1e-06 | 1000 |  | 1 | 90.59 | 90.64 | 6.9 | done |  |
+| E2 | E2 | step | 0.35 | 20000 | 0.0001 | 1000 |  | 1 | 92.02 | 92.10 | 27.5 | done | 88.6 (PC-LR) |
+| E4b | E4b | step | 0.35 | 5000 | 0.001 | 1000 |  | 1 | 91.24 | 91.24 | 6.9 | done |  |
+| E5 | E5_scheduleonecycle | onecycle | 0.1-3 | 5000 | 0.0001 | 1000 | 10000 | 1 | 86.03 | 86.11 | 6.9 | done |  |
+| E5 | E5_schedulestep | step | 0.35 | 5000 | 0.0001 | 1000 | 10000 | 1 | 79.35 | 79.35 | 6.8 | done |  |
+| E6 | E6_max_lr1 | onecycle | 0.1-1 | 5000 | 0.0001 | 1000 |  | 1 | 91.34 | 91.34 | 6.9 | done |  |
+| E6 | E6_max_lr2 | onecycle | 0.1-2 | 5000 | 0.0001 | 1000 |  | 1 | 92.12 | 92.12 | 6.9 | done |  |
 <!-- RESULTS:END -->
 
-Figures: `<out>/figures/`.
+One Tesla T4, 0.083 s/iteration; the full queue took about 1 h 50 min. For E0 the final accuracy is at LR 4 and is not meaningful; see the figure.
+
+| ID | Result | Verdict |
+|---|---|---|
+| H1 | 1cycle, 5k: 92.00 ± 0.25%; step, 20k: 92.02%; step, 5k: 90.38 ± 0.42%. Same accuracy in 4× fewer iterations, +1.6 pp at equal budget. | Confirmed |
+| H2 | Range-test accuracy stays at 0.6–0.72 for LR 1.2–4 without collapse; max LR 1 / 2 / 3: 91.34 / 92.12 / 92.00%. | Largely confirmed |
+| H3a | In the 1000-iteration range test train loss decreases monotonically and test loss is noisy; the rising-train / falling-test pattern of Fig. 8 is not observed. | Not observed |
+| H3b | 1cycle with WD 1e-3 diverged at iteration 2440, near the LR peak (2250); step with WD 1e-3 reached 91.24%; WD 1e-5 / 1e-6: 91.05 / 90.59%. | Confirmed |
+| H4 | 10k training samples: 1cycle 86.03% vs step 79.35% (+6.7 pp, vs +1.6 pp on the full set). | Confirmed |
+
+Absolute accuracies exceed the paper's ResNet-20 numbers; the protocols differ, so compare ratios rather than absolute values.
+
+![Test accuracy vs iteration](figures/main_curves.png)
+
+![LR range test](figures/e0_range_test.png)
+
+![Weight decay ablation](figures/wd_ablation.png)
+
+![Small training set](figures/small_data.png)
+
+![Max LR](figures/maxlr.png)
+
+![Schedules](figures/schedules.png)
+
+Figures are regenerated with `scripts/plots.py --out <out>`; copies used here are in `figures/`.
 
 ## Citation
 

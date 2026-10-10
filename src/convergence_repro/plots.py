@@ -126,6 +126,11 @@ def plot_wd_ablation(logs, stem: Path) -> bool:
     ctrl = _points(logs, "E4b", "wd")
     if ctrl:
         ax.plot(*zip(*ctrl), "s", ms=8, label="step 0.35 (E4b)")
+    for l in _of(logs, "E4"):
+        if l["status"] == "diverged":
+            at = l.get("final", {}).get("diverged_at")
+            ax.annotate(f"diverged at it {at}" if at else "diverged", (l["config"]["wd"], _final(l)),
+                        xytext=(-8, 10), textcoords="offset points", ha="right", color="#b2182b")
     ax.set(xscale="log", xlabel="weight decay", ylabel="final test accuracy")
     ax.legend()
     _save(fig, stem)
