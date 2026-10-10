@@ -1,0 +1,9 @@
+id: E5
+max_lr: 3.0
+lr0: 0.35
+iters: 5000
+wd: 1.0e-4
+train_subset: 10000
+seeds: [0]
+sweep:
+  schedule: [onecycle, step]

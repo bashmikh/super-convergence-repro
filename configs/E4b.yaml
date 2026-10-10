@@ -1,0 +1,6 @@
+id: E4b
+schedule: step
+lr0: 0.35
+iters: 5000
+wd: 1.0e-3
+seeds: [0]

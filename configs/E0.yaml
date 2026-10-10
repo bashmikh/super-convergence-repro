@@ -1,0 +1,8 @@
+id: E0
+schedule: linear
+max_lr: 4.0
+iters: 1000
+wd: 1.0e-4
+eval_every: 50
+eval_subset: 5000
+seeds: [0]

@@ -1,0 +1,6 @@
+id: E1
+schedule: onecycle
+max_lr: 3.0
+iters: 5000
+wd: 1.0e-4
+seeds: [0, 1]
