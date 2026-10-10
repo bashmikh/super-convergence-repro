@@ -4,10 +4,10 @@ Reproduction of Smith & Topin, *Super-Convergence: Very Fast Training of Neural 
 
 ## Run in Colab
 
-1. Open `colab.ipynb` in Colab, select a T4 runtime, set `REPO_URL`.
-2. Run the Drive and Install cells.
-3. Run the doctor and smoke test cells. `doctor.py` checks dependencies, GPU support, configs and directories; the smoke test runs each schedule on synthetic data and prints s/iter with the queue forecast. Pass `--scale` to `run_all.py` if needed.
-4. Run the TensorBoard cell, then the experiment and figure cells. After a disconnect re-run all cells: finished runs are skipped, interrupted runs resume from the last checkpoint.
+1. Upload `colab.ipynb` to Colab (File → Upload notebook, or File → Open notebook → GitHub) and select a T4 runtime.
+2. In the Config cell set `REPO_URL`; optionally `OUT` (results on Drive), `DATA`, `SCALE`.
+3. Runtime → Run all. The notebook mounts Drive, clones the repository to `/content/repo`, installs the package, runs `doctor.py` and the smoke test, starts TensorBoard, runs the queue and builds figures. All commands use absolute paths, so any cell works after the Config cell regardless of the current directory.
+4. If the smoke-test forecast exceeds the available time, set `SCALE` (e.g. 0.7) before the first experiment run and keep it unchanged. After a disconnect or a runtime restart, Run all again: finished runs are skipped, interrupted runs resume from the last checkpoint.
 
 Results are written to `/content/drive/MyDrive/sc-repro`.
 
@@ -15,7 +15,7 @@ Results are written to `/content/drive/MyDrive/sc-repro`.
 
 Each run writes TensorBoard events to `<out>/tb/<run_id>/`: `train/loss` and `lr` every iteration, `train/loss_ema`, `train/acc_ema`, `test/loss`, `test/acc` at each evaluation. The x-axis is the iteration. `log.json` remains the source for figures and the summary table.
 
-- Colab: run the TensorBoard cell before the experiment cell (`%load_ext tensorboard`, `%tensorboard --logdir $OUT/tb`); the embedded panel updates while the queue runs. Events on Drive can lag by a minute or two.
+- Colab: run the TensorBoard cell before the experiment cell (`%load_ext tensorboard`, `%tensorboard --logdir {OUT}/tb`); the embedded panel updates while the queue runs. Events on Drive can lag by a minute or two.
 - Local: `uv run tensorboard --logdir runs/tb`, then open http://localhost:6006.
 - Remote machine over SSH: `ssh -L 6006:localhost:6006 <host>`, start TensorBoard there, open http://localhost:6006 locally.
 
@@ -23,10 +23,14 @@ Set `tensorboard: false` in a config to disable. Without the `tensorboard` packa
 
 ## Local
 
+Requires a CUDA GPU supported by the installed torch build; check with `doctor.py`.
+
 ```bash
 uv sync
 uv run python scripts/doctor.py --out runs
-uv run python scripts/run_all.py --out runs --only E1
+uv run python scripts/run_all.py --out runs                 # full queue
+uv run python scripts/run_all.py --out runs --only E0,E1    # selected experiments
+uv run python scripts/plots.py --out runs --readme README.md
 ```
 
 ## Development
