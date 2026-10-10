@@ -44,3 +44,8 @@ def test_doctor_reports_unwritable_out(tmp_path):
     blocker.write_text("x")
     r = sh("scripts/doctor.py", "--device", "cpu", "--out", blocker / "sub", "--data", tmp_path)
     assert r.returncode == 1 and "FAIL" in r.stdout
+
+
+def test_fetch_data_help():
+    r = sh("scripts/fetch_data.py", "--help")
+    assert r.returncode == 0 and "--cache" in r.stdout

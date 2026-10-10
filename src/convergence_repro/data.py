@@ -1,13 +1,18 @@
 """CIFAR-10 held in device memory with batched on-device augmentation."""
+import os
+import shutil
 from dataclasses import dataclass
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
 import torchvision
+from torchvision.datasets.utils import check_integrity
 
 MEAN = (0.4914, 0.4822, 0.4465)
 STD = (0.2470, 0.2435, 0.2616)
 PAD = 4
+ARCHIVE = "cifar-10-python.tar.gz"
 
 
 @dataclass
@@ -23,6 +28,28 @@ def subset_indices(n: int, k: int, seed: int = 0) -> torch.Tensor:
     if k > n:
         raise ValueError(f"subset {k} exceeds dataset size {n}")
     return torch.randperm(n, generator=torch.Generator().manual_seed(seed))[:k]
+
+
+def fetch_cifar10(root, cache=None) -> None:
+    """Make CIFAR-10 available in `root`, reusing and filling an archive cache (e.g. on Drive).
+
+    A valid cached archive is copied instead of downloaded; the cache is written atomically
+    and replaced if its checksum does not match.
+    """
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+    md5 = torchvision.datasets.CIFAR10.tgz_md5
+    local = root / ARCHIVE
+    cached = Path(cache) / ARCHIVE if cache else None
+    if cached and not check_integrity(str(local), md5) and check_integrity(str(cached), md5):
+        shutil.copyfile(cached, local)
+    for train in (True, False):
+        torchvision.datasets.CIFAR10(root, train=train, download=True)
+    if cached and check_integrity(str(local), md5) and not check_integrity(str(cached), md5):
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cached.with_name(ARCHIVE + ".tmp")
+        shutil.copyfile(local, tmp)
+        os.replace(tmp, cached)
 
 
 def _split(root, train: bool):

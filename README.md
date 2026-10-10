@@ -5,8 +5,8 @@ Reproduction of Smith & Topin, *Super-Convergence: Very Fast Training of Neural 
 ## Run in Colab
 
 1. Upload `colab.ipynb` to Colab (File → Upload notebook, or File → Open notebook → GitHub) and select a T4 runtime.
-2. In the Config cell set `REPO_URL`; optionally `OUT` (results on Drive), `DATA`, `SCALE`.
-3. Runtime → Run all. The notebook mounts Drive, clones the repository to `/content/repo`, installs the package, runs `doctor.py` and the smoke test, starts TensorBoard, runs the queue and builds figures. All commands use absolute paths, so any cell works after the Config cell regardless of the current directory.
+2. In the Config cell set `REPO_URL`; optionally `OUT` (results on Drive), `DATA`, `DATA_CACHE`, `SCALE`.
+3. Runtime → Run all. The notebook mounts Drive, clones the repository to `/content/repo`, installs the package, fetches CIFAR-10 (downloaded once, then copied from the archive cached on Drive), runs `doctor.py` and the smoke test, starts TensorBoard, runs the queue and builds figures. All commands use absolute paths, so any cell works after the Config cell regardless of the current directory.
 4. If the smoke-test forecast exceeds the available time, set `SCALE` (e.g. 0.7) before the first experiment run and keep it unchanged. After a disconnect or a runtime restart, Run all again: finished runs are skipped, interrupted runs resume from the last checkpoint.
 
 Results are written to `/content/drive/MyDrive/sc-repro`.
@@ -77,6 +77,7 @@ E4b, E5, E6 are optional and run last.
 | Script | Purpose |
 |---|---|
 | `scripts/doctor.py` | Environment check: dependencies, GPU architecture support, fp16 step, configs, output and data directories. Exit code 1 on any failure. |
+| `scripts/fetch_data.py` | Downloads CIFAR-10 into `--data`; with `--cache` reuses a valid archive from the cache directory and stores it there after the first download. |
 | `scripts/smoke.py` | Short runs of each schedule on synthetic CIFAR-shaped data with an interrupt/resume check; measures s/iter and prints the queue time forecast. |
 | `scripts/run_all.py` | Runs the experiment queue in order E0, E1, E3, E4, E2, E4b, E5, E6. Skips finished runs, resumes interrupted ones. `--only E1,E3` restricts the queue, `--scale 0.8` shrinks all iteration budgets. |
 | `scripts/train.py` | Runs a single configuration; overrides such as `--wd`, `--max-lr`, `--iters` take precedence over the config. |

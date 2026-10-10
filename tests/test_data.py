@@ -1,6 +1,9 @@
+import os
+
 import pytest
 import torch
 
+from convergence_repro import data
 from convergence_repro.data import (PAD, augment, crop_flip, fake_cifar, normalize,
                                     subset_indices)
 
@@ -42,3 +45,47 @@ def test_fake_cifar():
     d = fake_cifar("cpu", n_train=200, n_test=50)
     assert d.x_train.dtype == torch.uint8 and d.x_train.shape == (200, 3, 32, 32)
     assert d.y_train.dtype == torch.long and d.y_test.shape == (50,)
+
+
+class FakeCifar:
+    """Stands in for torchvision CIFAR10: 'downloads' only when the archive is absent."""
+
+    downloads = 0
+    tgz_md5 = "fake"
+
+    def __init__(self, root, train, download):
+        from pathlib import Path
+
+        archive = Path(root) / data.ARCHIVE
+        if (archive.read_bytes() if archive.exists() else b"") != b"good":
+            FakeCifar.downloads += 1
+            archive.write_bytes(b"good")
+
+
+@pytest.fixture
+def fake_tv(monkeypatch):
+    FakeCifar.downloads = 0
+    monkeypatch.setattr(data.torchvision.datasets, "CIFAR10", FakeCifar)
+    monkeypatch.setattr(data, "check_integrity",
+                        lambda path, md5=None: os.path.exists(path) and open(path, "rb").read() == b"good")
+
+
+def test_fetch_fills_empty_cache(tmp_path, fake_tv):
+    data.fetch_cifar10(tmp_path / "data", tmp_path / "cache")
+    assert FakeCifar.downloads == 1
+    assert (tmp_path / "cache" / data.ARCHIVE).read_bytes() == b"good"
+
+
+def test_fetch_uses_cache(tmp_path, fake_tv):
+    (tmp_path / "cache").mkdir()
+    (tmp_path / "cache" / data.ARCHIVE).write_bytes(b"good")
+    data.fetch_cifar10(tmp_path / "data", tmp_path / "cache")
+    assert FakeCifar.downloads == 0
+
+
+def test_fetch_replaces_corrupt_cache(tmp_path, fake_tv):
+    (tmp_path / "cache").mkdir()
+    (tmp_path / "cache" / data.ARCHIVE).write_bytes(b"partial")
+    data.fetch_cifar10(tmp_path / "data", tmp_path / "cache")
+    assert FakeCifar.downloads == 1
+    assert (tmp_path / "cache" / data.ARCHIVE).read_bytes() == b"good"
